@@ -1,0 +1,831 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>LeiturArt — Biblioteca Virtual (com PDF salvo)</title>
+<style>
+  :root{
+    --bg:#f8fbff;
+    --card:#ffffff;
+    --accent:#3b5bdb;
+    --accent-2:#6d4bd1;
+    --muted:#6b7aa8;
+    --shadow: 0 8px 28px rgba(59,91,219,0.10);
+    --radius:14px;
+    --text:#222;
+    --btn-primary:#b4b9ff;
+    --btn-primary-hover:#9ea4ff;
+    --btn-cancel:#e9e9f3;
+    --btn-danger:#ffc4c9;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;font-family:"Segoe UI",Tahoma,Geneva,Verdana,sans-serif;
+    background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column;
+  }
+
+  /* Header */
+  header{background:var(--accent);color:#eaf0ff;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 3px 10px rgba(59,91,219,0.18)}
+  .brand{display:flex;gap:12px;align-items:center}
+  .logo{width:44px;height:44px;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--accent-2));display:flex;align-items:center;justify-content:center;color:white;font-weight:800;font-size:18px}
+  .site-title{font-weight:800;font-size:1.1rem}
+  nav{display:flex;align-items:center;gap:8px}
+  nav button{background:transparent;border:none;color:inherit;padding:8px 12px;border-radius:10px;font-weight:700;cursor:pointer}
+  .counter{margin-left:8px;background:white;color:var(--accent);padding:6px 12px;border-radius:999px;font-weight:700}
+
+  /* Main */
+  main{max-width:1080px;margin:28px auto;padding:0 20px;flex:1;width:100%}
+  h1{color:var(--accent);text-align:center;margin:0 0 18px;font-size:1.5rem}
+
+  /* Cards and grid */
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:20px}
+  .card{background:var(--card);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow);cursor:pointer;transition:transform .14s ease,box-shadow .14s ease;display:flex;flex-direction:column;gap:10px}
+  .card:hover{transform:translateY(-6px);box-shadow:0 14px 44px rgba(59,91,219,0.12)}
+  .card h2{margin:0 0 6px;color:#2245a8}
+  .card p{margin:0;color:var(--muted);line-height:1.35}
+
+  .controls{display:flex;align-items:center;gap:10px;justify-content:space-between;margin-bottom:12px}
+  select,input[type="text"]{padding:8px 10px;border-radius:10px;border:1px solid #e8ecff;background:white;font-size:0.95rem}
+  .btn{background:var(--accent);color:white;border:none;padding:8px 12px;border-radius:10px;cursor:pointer;font-weight:700}
+  .btn.ghost{background:white;color:var(--accent);border:2px solid var(--accent)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px}
+
+  /* Book card */
+  .book{background:var(--card);border-radius:12px;padding:10px;box-shadow:0 8px 28px rgba(59,91,219,0.06);cursor:pointer;display:flex;flex-direction:column;gap:8px;min-height:240px;position:relative}
+  .cover{width:100%;height:180px;border-radius:8px;overflow:hidden;background:#f7f7fb;display:flex;align-items:center;justify-content:center}
+  .cover img{width:100%;height:100%;object-fit:cover;display:block}
+  .book-title{font-weight:800;color:#2245a8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .book-meta{font-size:0.85rem;color:var(--muted)}
+  .open-pdf-btn{position:absolute;top:12px;right:12px;background:rgba(0,0,0,0.6);color:white;border:none;padding:6px 8px;border-radius:8px;font-size:0.85rem;cursor:pointer}
+
+  /* Modal */
+  .modal-back{position:fixed;inset:0;background:rgba(0,0,0,0.30);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;z-index:50}
+  .modal{width:min(880px,96%);background:white;border-radius:12px;padding:18px;box-shadow:0 18px 60px rgba(0,0,0,0.18);z-index:60;max-height:92vh;overflow:auto}
+  .grid-2{display:grid;grid-template-columns:1fr 2fr;gap:12px}
+  .modal input,.modal select,.modal textarea{width:100%;padding:10px;border-radius:10px;border:1px solid #eef2ff;margin-top:8px}
+  .modal .actions{display:flex;gap:8px;margin-top:12px;align-items:center;justify-content:flex-end}
+  .danger{color:#e44;background:transparent;border:none;cursor:pointer}
+  .small-cover{width:72px;height:96px;border-radius:6px;overflow:hidden;background:#f7f7fb;display:flex;align-items:center;justify-content:center}
+
+  /* Review composer (inline) */
+  .review-card{background:#fff;border-radius:12px;box-shadow:0 8px 28px rgba(59,91,219,0.06);padding:12px}
+
+  /* Button styles for modal (consistent look) */
+  .modal button {
+    font-size: 14px;
+    padding: 8px 14px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    transition: 0.15s ease;
+    font-weight: 600;
+  }
+  .review-card {
+  position: fixed; /* flutua sobre tudo */
+  top: 50%; 
+  left: 50%;
+  transform: translate(-50%, -50%); /* centraliza */
+  z-index: 100; /* fica acima de tudo */
+  background: var(--card);
+  padding: 18px;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  width: min(500px, 90%);
+  max-height: 80vh;
+  overflow-y: auto;
+}
+.review-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.3);
+  z-index: 99;
+}
+
+  .btn-primary {
+    background: var(--btn-primary);
+    color: #fff;
+  }
+  .btn-primary:hover { background: var(--btn-primary-hover); }
+
+  .btn-cancel {
+    background: var(--btn-cancel);
+    color: #333;
+  }
+  .btn-cancel:hover { filter: brightness(0.98); }
+
+  .btn-danger {
+    background: var(--btn-danger);
+    color: #742b33;
+  }
+  .btn-danger:hover { filter: brightness(0.98); }
+
+  footer{padding:18px;text-align:center;color:var(--accent);margin-top:18px}
+
+  @media (max-width:720px){
+    .grid-2{grid-template-columns:1fr}
+    .cover{height:160px}
+  }
+  /* Todos os botões do site, forçando estilos iguais */
+button, .btn, .modal button, .review-card button, .open-pdf-btn {
+  font-size: 14px !important;
+  padding: 8px 14px !important;
+  border-radius: 10px !important;
+  border: none !important;
+  cursor: pointer !important;
+  font-weight: 600 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  min-height: 36px !important;
+  transition: 0.15s ease !important;
+  background: var(--accent) !important; /* padrão, muda depois via classe */
+  color: #fff !important;
+}
+
+/* Tipos de botão */
+.btn-primary { background: var(--btn-primary) !important; color: #fff !important; }
+.btn-primary:hover { background: var(--btn-primary-hover) !important; }
+
+.btn-cancel { background: var(--btn-cancel) !important; color: #333 !important; }
+.btn-cancel:hover { filter: brightness(0.98) !important; }
+
+.btn-danger { background: var(--btn-danger) !important; color: #742b33 !important; }
+.btn-danger:hover { filter: brightness(0.98) !important; }
+
+.btn.ghost { background: white !important; color: var(--accent) !important; border: 2px solid var(--accent) !important; }
+.btn.ghost:hover { filter: brightness(0.95) !important; }
+
+.open-pdf-btn { background: rgba(0,0,0,0.6) !important; color: #fff !important; }
+.open-pdf-btn:hover { filter: brightness(0.95) !important; }
+
+
+  
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="logo">LA</div>
+    <div>
+      <div class="site-title">LeiturArt</div>
+      <div style="font-size:0.85rem;color:rgba(235,242,255,0.9)">Sua biblioteca virtual</div>
+    </div>
+  </div>
+
+  <nav aria-label="navegação principal">
+    <button id="nav-estante"><p style="display:none;">Estante</p></button>
+    <button id="nav-avaliacoes"><p style="display:none;">Avaliações</p></button>
+    <button id="nav-stats"><p style="display:none;">Estatísticas</p></button>
+    <button id="nav-home" class="active">Início</button>
+  </nav>
+</header>
+
+<main>
+  <!-- HOME -->
+  <section id="page-home" class="page">
+    <h1>Bem-vinda ao LeiturArt</h1>
+    <br><br>
+    <div class="cards" role="list">
+      <div class="card" id="card-estante" role="listitem" tabindex="0">
+        <h2>Estante</h2>
+        <p>Armazene capas, títulos, links e organize seus livros com facilidade.</p>
+      </div>
+      <div class="card" id="card-avaliacoes" role="listitem" tabindex="0">
+        <h2>Avaliações</h2>
+        <p>Registre suas impressões, salve frases e dê notas com carinhas.</p>
+      </div>
+      <div class="card" id="card-stats" role="listitem" tabindex="0">
+        <h2>Estatísticas</h2>
+        <p>Veja quantos livros você concluiu e acompanhe seu progresso.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ESTANTE -->
+  <section id="page-estante" class="page" style="display:none">
+    <h1 style="margin:0;color:#2245a8">Estante</h1>
+    <br>
+    <div class="controls">
+      <div style="display:flex;gap:8px;align-items:center">
+        <label for="genre-filter" style="font-size:0.9rem;color:var(--muted);margin-right:6px">Gênero</label>
+        <select id="genre-filter" aria-label="Filtro de gênero"></select>
+      </div>
+      
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn" id="btn-add-book">Adicionar</button>
+      </div>
+    </div>
+
+    <div id="estante-grid" class="grid" aria-live="polite"></div>
+  </section>
+
+  <!-- AVALIAÇÕES -->
+  <section id="page-avaliacoes" class="page" style="display:none">
+    <div style="text-align:center;margin-bottom:16px">
+      <h1 style="margin:0;color:#2245a8">Avaliações</h1>
+      <br>
+    </div>
+
+
+    <div id="avaliacoes-grid" class="grid"></div>
+    <div id="review-composer-container" style="margin-top:16px"></div>
+  </section>
+
+  <!-- STATS -->
+  <section id="page-stats" class="page" style="display:none">
+  <div style="text-align:center;margin-bottom:12px">
+    <h2 style="margin:0;color:#2245a8">Estatísticas</h2>
+    <br>
+  </div>
+  <div class="stats-grid" id="stats-grid"></div>
+</section>
+
+<br><br><br>
+
+<footer>
+  LeiturArt • Todos os direitos reservados
+</footer>
+
+<!-- Modal template -->
+<template id="modal-template">
+  <div class="modal-back" role="dialog" aria-modal="true">
+    <div class="modal">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <h3 class="modal-title">Novo livro</h3>
+        <div class="modal-genre" style="color:var(--muted)"></div>
+      </div>
+
+      <div class="grid-2" style="margin-top:12px">
+        <div>
+          <div class="cover modal-cover"></div>
+          <input class="modal-cover-url" placeholder="URL da capa (opcional)" />
+        </div>
+
+        <div>
+          <input class="modal-title-input" placeholder="Título" />
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">
+            <input class="modal-author" placeholder="Autor" />
+            <input class="modal-pages" placeholder="Número de páginas" />
+          </div>
+
+          <div style="display:flex;gap:8px;margin-top:8px;align-items:center">
+            <select class="modal-genre-select">
+              <option value="">Sem gênero</option>
+            </select>
+
+            <select class="modal-status">
+              <option>Quero ler</option>
+              <option>Lendo</option>
+              <option>Concluído</option>
+            </select>
+          </div>
+
+          <input class="modal-link" placeholder="Link para o livro (opcional)" style="margin-top:8px" />
+
+          <!-- PDF opcional: aparece abaixo do link -->
+          <label style="font-size:0.85rem;color:var(--muted);margin-top:10px;display:block">Arquivo PDF (opcional)</label>
+          <input type="file" accept="application/pdf" class="modal-pdf" style="margin-top:6px" />
+          <span class="modal-file-name" style="margin-left:8px;color:var(--muted);font-size:0.9rem"></span>
+
+          <!-- contêiner para botões relacionados ao PDF (será preenchido por JS) -->
+          <div class="pdf-actions" style="margin-top:8px"></div>
+
+          <div class="actions" style="margin-top:10px">
+            <button class="modal-save btn-primary">Salvar</button>
+            <button class="modal-cancel btn-cancel" style="margin-left:8px">Cancelar</button>
+            <button class="modal-delete btn-danger" style="margin-left:auto">Excluir</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script>
+/* LeiturArt - versão com PDF persistente em Base64 dentro do objeto do livro */
+const STORAGE_KEY = 'leiturart_books_vfinal';
+const GENRES = ["Todos","Romance","Ficção","Fantasia","Mistério","Não-ficção","Biografia","Infantojuvenil","Poema"];
+
+function uid(prefix='id'){ return `${prefix}_${Math.random().toString(36).slice(2,9)}` }
+function qs(sel, ctx=document){ return ctx.querySelector(sel) }
+function qsa(sel, ctx=document){ return Array.from((ctx||document).querySelectorAll(sel)) }
+
+function loadBooks(){ try{ return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]') }catch(e){console.error(e);return []} }
+function saveBooks(bks){ localStorage.setItem(STORAGE_KEY, JSON.stringify(bks)) }
+
+let books = loadBooks();
+let currentFilter = 'Todos';
+
+/* DOM refs */
+/* ADICIONEI navEstante e pageEstante (antes faltavam) */
+const navHome = qs('#nav-home'),
+      navEstante = qs('#nav-estante'),
+      navAval = qs('#nav-avaliacoes'),
+      navStats = qs('#nav-stats');
+
+const pageHome = qs('#page-home'),
+      pageEstante = qs('#page-estante'),
+      pageAval = qs('#page-avaliacoes'),
+      pageStats = qs('#page-stats');
+
+const estanteGrid = qs('#estante-grid'),
+      genreFilter = qs('#genre-filter'),
+      btnAddBook = qs('#btn-add-book');
+
+const avalGrid = qs('#avaliacoes-grid'),
+      reviewComposerContainer = qs('#review-composer-container');
+
+const statsGrid = qs('#stats-grid'),
+      counter = qs('#counter');
+
+/* DOM cards da Home (para navegarem quando clicados) */
+const cardEstante = qs('#card-estante'),
+      cardAvaliacoes = qs('#card-avaliacoes'),
+      cardStats = qs('#card-stats');
+
+function init(){
+  // populate genres
+  if(genreFilter){
+    GENRES.forEach(g=>{ const o=document.createElement('option'); o.value=g; o.textContent=g; genreFilter.appendChild(o) });
+    genreFilter.value = currentFilter;
+    genreFilter.addEventListener('change', e=>{ currentFilter = e.target.value; renderEstante() });
+  }
+
+  // nav
+  navHome && navHome.addEventListener('click', ()=>navigate('home'));
+  navEstante && navEstante.addEventListener('click', ()=>navigate('estante'));
+  navAval && navAval.addEventListener('click', ()=>navigate('avaliacoes'));
+  navStats && navStats.addEventListener('click', ()=>navigate('stats'));
+
+  // home cards -> navegação
+  cardEstante && cardEstante.addEventListener('click', ()=>navigate('estante'));
+  cardAvaliacoes && cardAvaliacoes.addEventListener('click', ()=>navigate('avaliacoes'));
+  cardStats && cardStats.addEventListener('click', ()=>navigate('stats'));
+
+  btnAddBook && btnAddBook.addEventListener('click', ()=>createAndOpenNewBook());
+
+  renderAll();
+}
+
+/* Navigation */
+function navigate(page){
+  qsa('nav button').forEach(b=>b.classList.remove('active'));
+  if(page==='home') navHome && navHome.classList.add('active');
+  if(page==='estante') navEstante && navEstante.classList.add('active');
+  if(page==='avaliacoes') navAval && navAval.classList.add('active');
+  if(page==='stats') navStats && navStats.classList.add('active');
+
+  pageHome.style.display = (page==='home') ? '' : 'none';
+  pageEstante.style.display = (page==='estante') ? '' : 'none';
+  pageAval.style.display = (page==='avaliacoes') ? '' : 'none';
+  pageStats.style.display = (page==='stats') ? '' : 'none';
+
+  renderAll();
+}
+
+/* Render everything */
+function renderAll(){ renderEstante(); renderAvaliacoes(); renderStats(); updateCounter() }
+
+/* ESTANTE */
+function renderEstante(){
+  estanteGrid.innerHTML = '';
+  const visible = (currentFilter==='Todos') ? books : books.filter(b => (b.genre||'') === currentFilter);
+  visible.forEach((book, idx) => { estanteGrid.appendChild(createBookCard(book, idx)) });
+}
+
+function createBookCard(book, idx){
+  const wrapper = document.createElement('div'); wrapper.className='book';
+  wrapper.tabIndex = 0;
+
+  const cover = document.createElement('div'); cover.className='cover';
+  if(book.cover){ const img = document.createElement('img'); img.src = book.cover; img.alt = book.title||'Capa'; cover.appendChild(img) }
+  else cover.innerHTML = `<div style="color:#b9c6ff">sem capa</div>`;
+
+  const title = document.createElement('div'); title.className='book-title'; title.textContent = book.title || 'Sem título';
+  const meta = document.createElement('div'); meta.className='book-meta'; meta.textContent = `${book.author || ''}${book.pages ? ' • '+book.pages+' páginas':''}`;
+
+  wrapper.appendChild(cover); wrapper.appendChild(title); wrapper.appendChild(meta);
+
+  wrapper.addEventListener('click', ()=> openBookModal(book.id));
+  wrapper.addEventListener('keydown', (e)=>{ if(e.key==='Enter') openBookModal(book.id) });
+
+  return wrapper;
+}
+
+/* Create & open new book */
+function createAndOpenNewBook(){
+  const newBook = { id: uid('book'), title:'', author:'', pages:'', cover:'', genre:'', status:'Quero ler', link:'', createdAt: Date.now(), review: null, pdf: null, pdfName: '' };
+  books = [newBook, ...books];
+  saveBooks(books);
+  renderAll();
+  openBookModal(newBook.id);
+}
+
+/* Modal for add/edit book */
+function openBookModal(bookId){
+  const book = books.find(b=>b.id===bookId);
+  if(!book) return;
+
+  const tpl = qs('#modal-template');
+  const node = tpl.content.firstElementChild.cloneNode(true);
+  const modalBack = node;
+  const modal = node.querySelector('.modal');
+
+  // refs
+  const titleEl = modal.querySelector('.modal-title');
+  const coverEl = modal.querySelector('.modal-cover');
+  const coverUrl = modal.querySelector('.modal-cover-url');
+  const titleInput = modal.querySelector('.modal-title-input');
+  const authorInput = modal.querySelector('.modal-author');
+  const pagesInput = modal.querySelector('.modal-pages');
+  const genreSelect = modal.querySelector('.modal-genre-select');
+  const genreLabel = modal.querySelector('.modal-genre');
+  const statusSelect = modal.querySelector('.modal-status');
+  const linkInput = modal.querySelector('.modal-link');
+  const pdfInput = modal.querySelector('.modal-pdf');
+  const fileNameSpan = modal.querySelector('.modal-file-name');
+  const pdfActionsContainer = modal.querySelector('.pdf-actions');
+  const saveBtn = modal.querySelector('.modal-save');
+  const cancelBtn = modal.querySelector('.modal-cancel');
+  const deleteBtn = modal.querySelector('.modal-delete');
+
+  // create dynamic view button (we manage it here)
+  const viewPdfBtn = document.createElement('button');
+  viewPdfBtn.className = 'btn-primary';
+  viewPdfBtn.style.display = 'none';
+  viewPdfBtn.textContent = 'Ver PDF';
+
+  // populate genre options
+  genreSelect.innerHTML = '<option value="">Sem gênero</option>';
+  GENRES.filter(g=>g!=='Todos').forEach(g=>{ const o=document.createElement('option'); o.value=g; o.textContent=g; genreSelect.appendChild(o) });
+
+  // model (fresh)
+  let modelIndex = books.findIndex(b=>b.id===book.id);
+  let model = {...books[modelIndex]}; // shallow clone
+  let previewObjectUrl = null; // for immediate viewing
+
+  // fill UI
+  titleEl.textContent = model.title || 'Editar livro';
+  titleInput.value = model.title || '';
+  authorInput.value = model.author || '';
+  pagesInput.value = model.pages || '';
+  coverUrl.value = model.cover || '';
+  linkInput.value = model.link || '';
+  genreSelect.value = model.genre || '';
+  genreLabel.textContent = model.genre || '';
+  statusSelect.value = model.status || 'Quero ler';
+
+  // show stored file name if exists
+  fileNameSpan.textContent = model.pdfName || '';
+
+  // helper: set cover preview
+  function setCoverPreview(){
+    const url = coverUrl.value.trim();
+    coverEl.innerHTML = '';
+    if(url){
+      const img = document.createElement('img'); img.src = url; img.alt = 'Capa'; coverEl.appendChild(img);
+    } else {
+      coverEl.innerHTML = `<div style="color:#b9c6ff">sem capa</div>`;
+    }
+  }
+  setCoverPreview();
+  coverUrl.addEventListener('input', setCoverPreview);
+
+  // render pdf action buttons (view + delete) depending on model.pdf
+  function renderPdfActions(){
+    pdfActionsContainer.innerHTML = '';
+    if(model.pdf){
+      // view button
+      viewPdfBtn.style.display = 'inline-block';
+      viewPdfBtn.onclick = ()=> openDataUrlInNewTab(model.pdf);
+      pdfActionsContainer.appendChild(viewPdfBtn);
+
+      // delete button (dinâmico)
+      const deletePdfBtn = document.createElement('button');
+      deletePdfBtn.textContent = "Excluir PDF";
+      deletePdfBtn.className = 'btn-danger';
+      deletePdfBtn.style.marginLeft = "8px";
+      deletePdfBtn.addEventListener('click', ()=>{
+        if(confirm("Tem certeza que deseja excluir o PDF?")){
+          model.pdf = null;
+          model.pdfName = '';
+          books[modelIndex].pdf = null;
+          books[modelIndex].pdfName = '';
+          saveBooks(books);
+
+          // atualizar UI
+          fileNameSpan.textContent = '';
+          pdfInput.value = '';
+          renderPdfActions();
+          renderAll();
+          alert('PDF excluído com sucesso!');
+        }
+      });
+      pdfActionsContainer.appendChild(deletePdfBtn);
+    } else {
+      viewPdfBtn.style.display = 'none';
+    }
+  }
+
+  renderPdfActions();
+
+  // when user selects a file, create preview object URL (but do NOT persist until save)
+  pdfInput.addEventListener('change', (e)=>{
+    const f = e.target.files[0];
+    if(!f){
+      fileNameSpan.textContent = model.pdfName || '';
+      return;
+    }
+    // create object url for quick viewing
+    if(previewObjectUrl) { URL.revokeObjectURL(previewObjectUrl); previewObjectUrl = null; }
+    previewObjectUrl = URL.createObjectURL(f);
+    // show preview button that opens objectUrl (temporary)
+    viewPdfBtn.style.display = 'inline-block';
+    viewPdfBtn.onclick = () => { window.open(previewObjectUrl, '_blank'); };
+    // update filename shown
+    fileNameSpan.textContent = f.name;
+    // we'll convert to base64 on Save (and save f.name into model.pdfName)
+  });
+
+  // save button: handle conversion of selected file to base64 (if any), then persist
+  saveBtn.addEventListener('click', async ()=>{
+    // update fields
+    model.title = titleInput.value.trim();
+    model.author = authorInput.value.trim();
+    model.pages = pagesInput.value.trim();
+    model.cover = coverUrl.value.trim();
+    model.link = linkInput.value.trim();
+    model.genre = genreSelect.value;
+    model.status = statusSelect.value;
+
+    // if user selected a file, convert to base64 and set model.pdf + model.pdfName
+    const f = pdfInput.files && pdfInput.files[0];
+    if(f){
+      try{
+        const base64 = await fileToDataURL(f);
+        model.pdf = base64; // persistable
+        model.pdfName = f.name || '';
+      } catch(err){
+        console.error('Erro convertendo PDF', err);
+        alert('Erro ao ler o arquivo PDF. Veja console.');
+        return;
+      }
+    } else {
+      // if user didn't select, keep existing model.pdf and pdfName as is (no overwrite)
+      model.pdf = model.pdf || books[modelIndex].pdf || null;
+      model.pdfName = model.pdfName || books[modelIndex].pdfName || '';
+    }
+
+    // write back to books array (preserve review if present)
+    books = books.map((b,i)=> i === modelIndex ? {...b, title:model.title, author:model.author, pages:model.pages, cover:model.cover, link:model.link, genre:model.genre, status:model.status, pdf:model.pdf, pdfName:model.pdfName} : b);
+    saveBooks(books);
+
+    // cleanup preview object urls
+    if(previewObjectUrl){ URL.revokeObjectURL(previewObjectUrl); previewObjectUrl = null; }
+
+    // close modal and re-render
+    document.body.removeChild(modalBack);
+    renderAll();
+  });
+
+  // cancel
+  cancelBtn.addEventListener('click', ()=>{
+    if(previewObjectUrl) { URL.revokeObjectURL(previewObjectUrl); previewObjectUrl = null; }
+    document.body.removeChild(modalBack);
+  });
+
+  // delete (remove book)
+  deleteBtn.addEventListener('click', ()=>{
+    if(confirm('Excluir este livro?')) {
+      books = books.filter(b=>b.id !== model.id);
+      saveBooks(books);
+      if(previewObjectUrl) { URL.revokeObjectURL(previewObjectUrl); previewObjectUrl = null; }
+      document.body.removeChild(modalBack);
+      renderAll();
+    }
+  });
+
+  // click outside to close
+  modalBack.addEventListener('click', (e)=>{ if(e.target === modalBack) { if(previewObjectUrl) { URL.revokeObjectURL(previewObjectUrl); previewObjectUrl = null; } document.body.removeChild(modalBack) } });
+
+  document.body.appendChild(modalBack);
+}
+
+/* Converte File -> dataURL (base64) */
+function fileToDataURL(file){
+  return new Promise((resolve, reject)=>{
+    const reader = new FileReader();
+    reader.onerror = ()=>{ reader.abort(); reject(new Error('Erro lendo arquivo')) };
+    reader.onload = ()=> resolve(reader.result);
+    reader.readAsDataURL(file);
+  });
+}
+
+/* Abre dataURL (base64) de forma robusta em nova aba criando blob */
+function openDataUrlInNewTab(dataUrl){
+  // try to fetch blob then open objectURL
+  fetch(dataUrl).then(res => res.blob()).then(blob => {
+    const url = URL.createObjectURL(blob);
+    const win = window.open(url, '_blank');
+    if(!win) alert('Permissão de popup bloqueada. permita abrir nova aba.');
+    // revoke after some time
+    setTimeout(()=>URL.revokeObjectURL(url), 60_000);
+  }).catch(err=>{
+    console.error('Erro ao abrir PDF', err);
+    // fallback: try opening dataUrl directly
+    const win = window.open(dataUrl, '_blank');
+    if(!win) alert('Permissão de popup bloqueada. permita abrir nova aba.');
+  });
+}
+
+/* AVALIAÇÕES rendering: show same blocks but open composer modal when clicked */
+function renderAvaliacoes(){
+  avalGrid.innerHTML = '';
+  const visible = books; // all books on reviews page
+  visible.forEach((book, idx) => {
+    const card = document.createElement('div'); card.className='book';
+
+    const cover = document.createElement('div'); cover.className='cover';
+    if(book.cover){ const img = document.createElement('img'); img.src = book.cover; img.alt = book.title || 'Capa'; cover.appendChild(img) }
+    else cover.innerHTML = `<div style="color:#b9c6ff">sem capa</div>`;
+    const title = document.createElement('div'); title.className='book-title'; title.textContent = book.title || 'Sem título';
+    const meta = document.createElement('div'); meta.className='book-meta'; meta.textContent = `${book.author || ''}${book.pages ? ' • '+book.pages+' páginas':''}`;
+
+    card.appendChild(cover); card.appendChild(title); card.appendChild(meta);
+
+    card.addEventListener('click', ()=> openReviewComposer(book.id));
+    avalGrid.appendChild(card);
+  });
+}
+
+function openReviewComposer(bookId){
+  const book = books.find(b => b.id === bookId);
+  if(!book) return;
+
+  // Cria backdrop (fundo escuro)
+  const backdrop = document.createElement('div');
+  backdrop.className = 'modal-back';
+  
+  // Cria o modal flutuante
+  const modal = document.createElement('div');
+  modal.className = 'modal';
+
+  // Título e info
+  const title = document.createElement('h3');
+  title.className = 'modal-title';
+  title.textContent = 'Avaliar: ' + (book.title || 'Sem título');
+
+  const info = document.createElement('div');
+  info.style.color = 'var(--muted)';
+  info.style.marginTop = '6px';
+  info.textContent = `${book.author || ''}${book.genre ? ' • '+book.genre : ''}`;
+
+  modal.appendChild(title);
+  modal.appendChild(info);
+
+  // Faces
+  const faceWrap = document.createElement('div');
+  faceWrap.style.display='flex';
+  faceWrap.style.gap='8px';
+  faceWrap.style.marginTop='12px';
+
+  const faces = ['😭','😡','😐','🙂','🤩'];
+  let form = { rating: (book.review && book.review.rating) || 0, text: (book.review && book.review.text) || '', characters: (book.review && book.review.characters) || '', quotes: (book.review && book.review.quotes) || '' };
+
+  faces.forEach((f, idx)=>{
+    const b = document.createElement('button');
+    b.className='rating-face';
+    b.innerText = f;
+    b.style.fontSize='18px';
+    b.style.padding='8px';
+    b.style.borderRadius='999px';
+    b.style.cursor='pointer';
+    b.style.border = (form.rating === idx+1) ? '2px solid #b9c6ff' : '1px solid transparent';
+    b.addEventListener('click', ()=> {
+      form.rating = idx+1;
+      qsa('.rating-face').forEach((el,i)=> el.style.border = (i===idx) ? '2px solid #b9c6ff' : '1px solid transparent');
+    });
+    faceWrap.appendChild(b);
+  });
+
+  // Textarea e inputs
+  const ta = document.createElement('textarea');
+  ta.placeholder = 'Como era o livro?';
+  ta.style.width='100%';
+  ta.style.marginTop='8px';
+  ta.style.padding='8px';
+  ta.value = form.text;
+
+  const inpChars = document.createElement('input');
+  inpChars.placeholder = 'Personagens principais';
+  inpChars.style.width='100%';
+  inpChars.style.marginTop='8px';
+  inpChars.style.padding='8px';
+  inpChars.value = form.characters;
+
+  const inpQuotes = document.createElement('input');
+  inpQuotes.placeholder = 'Frases que marcaram';
+  inpQuotes.style.width='100%';
+  inpQuotes.style.marginTop='8px';
+  inpQuotes.style.padding='8px';
+  inpQuotes.value = form.quotes;
+
+  modal.appendChild(faceWrap);
+  modal.appendChild(ta);
+  modal.appendChild(inpChars);
+  modal.appendChild(inpQuotes);
+
+  // Ações
+  const actions = document.createElement('div');
+  actions.className='actions';
+
+  const btnSave = document.createElement('button');
+  btnSave.className='btn-primary';
+  btnSave.textContent='Salvar avaliação';
+
+  const btnEditBook = document.createElement('button');
+  btnEditBook.textContent='Editar livro';
+  btnEditBook.className='btn ghost';
+
+  const btnCancel = document.createElement('button');
+  btnCancel.textContent='Cancelar';
+  btnCancel.className='btn-cancel';
+
+  btnSave.addEventListener('click', ()=>{
+    book.review = {
+      rating: form.rating,
+      text: ta.value.trim(),
+      characters: inpChars.value.trim(),
+      quotes: inpQuotes.value.trim()
+    };
+    saveBooks(books);
+    document.body.removeChild(backdrop);
+    renderAvaliacoes();
+    updateCounter();
+  });
+
+  btnEditBook.addEventListener('click', ()=> {
+    document.body.removeChild(backdrop);
+    openBookModal(book.id);
+  });
+
+  btnCancel.addEventListener('click', ()=>{
+    document.body.removeChild(backdrop);
+  });
+
+  actions.appendChild(btnSave);
+  actions.appendChild(btnEditBook);
+  actions.appendChild(btnCancel);
+  modal.appendChild(actions);
+
+  // Fecha clicando fora
+  backdrop.addEventListener('click', (e)=>{ if(e.target === backdrop) document.body.removeChild(backdrop); });
+
+  backdrop.appendChild(modal);
+  document.body.appendChild(backdrop);
+}
+
+/* STATS */
+function renderStats(){
+  statsGrid.innerHTML = '';
+  const total = books.length;
+  const completed = books.filter(b => b.status === 'Concluído').length;
+  const reading = books.filter(b => b.status === 'Lendo').length;
+  const want = books.filter(b => b.status === 'Quero ler').length;
+  const reviewsCount = books.filter(b => b.review).length;
+  const items = [
+    {title:'Total de livros', value: total},
+    {title:'Concluídos', value: completed},
+    {title:'Lendo', value: reading},
+    {title:'Quero ler', value: want},
+    {title:'Avaliações', value: reviewsCount},
+  ];
+  items.forEach(it=>{
+    const card = document.createElement('div'); card.style.background='#fff'; card.style.padding='12px'; card.style.borderRadius='12px'; card.style.boxShadow='0 8px 28px rgba(59,91,219,0.06)';
+    const t = document.createElement('div'); t.style.fontSize='13px'; t.style.color='var(--muted)'; t.textContent = it.title;
+    const v = document.createElement('div'); v.style.fontSize='20px'; v.style.fontWeight='800'; v.style.color='#2245a8'; v.style.marginTop='6px'; v.textContent = it.value;
+    card.appendChild(t); card.appendChild(v); statsGrid.appendChild(card);
+  });
+}
+
+/* Counter update */
+function updateCounter(){ const n = books.filter(b=>b.status==='Concluído').length; counter.textContent = `Lidos: ${n}` }
+
+/* Helper: abrirAvaliacao (mantido para compatibilidade) */
+function abrirAvaliacao(bookId){
+  navigate('avaliacoes');
+  setTimeout(()=> openReviewComposer(bookId), 120);
+}
+
+/* Boot */
+init();
+
+/* Start rendering */
+renderAll();
+</script>
+
+</body>
+</html>
