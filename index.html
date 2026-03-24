@@ -180,6 +180,8 @@ button, .btn, .modal button, .review-card button, .open-pdf-btn {
     <button id="nav-avaliacoes"><p style="display:none;">Avaliações</p></button>
     <button id="nav-stats"><p style="display:none;">Estatísticas</p></button>
     <button id="nav-home" class="active">Início</button>
+
+    <span id="counter" class="counter">0 livros</span>
   </nav>
 </header>
 
@@ -811,9 +813,13 @@ function renderStats(){
   });
 }
 
-/* Counter update */
-function updateCounter(){ const n = books.filter(b=>b.status==='Concluído').length; counter.textContent = `Lidos: ${n}` }
+function updateCounter(){
+  const counterEl = document.querySelector('#counter');
+  if(!counterEl) return;
 
+  const total = books.length;
+  counterEl.textContent = total + ' livro' + (total !== 1 ? 's' : '');
+}
 /* Helper: abrirAvaliacao (mantido para compatibilidade) */
 function abrirAvaliacao(bookId){
   navigate('avaliacoes');
@@ -829,3 +835,4 @@ renderAll();
 
 </body>
 </html>
+
